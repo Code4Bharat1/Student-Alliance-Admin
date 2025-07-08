@@ -127,8 +127,8 @@ export default function Modal({ product, onClose, onSave }) {
     setSaving(true);
     try {
       const url = product
-        ? `http://localhost:5000/api/products/${product._id}`
-        : "http://localhost:5000/api/products";
+        ? `https://student-alliance-api.code4bharat.com/api/products/${product._id}`
+        : "https://student-alliance-api.code4bharat.com/api/products";
 
       const method = product ? "PUT" : "POST";
 

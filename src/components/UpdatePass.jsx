@@ -39,7 +39,7 @@ const UpdatePass = () => {
 
     setLoading(true);
     try {
-      await axios.post("http://localhost:5000/api/auth/update-password", {
+      await axios.post("https://student-alliance-api.code4bharat.com/api/auth/update-password", {
         email,
         password,
       });

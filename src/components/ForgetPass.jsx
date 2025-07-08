@@ -37,11 +37,11 @@ export default function ForgotPass() {
 
     try {
       // 1. Check if email exists
-      await axios.post("http://localhost:5000/api/auth/check-email", { email });
+      await axios.post("https://student-alliance-api.code4bharat.com/api/auth/check-email", { email });
 
       // 2. Send OTP to email
       const response = await axios.post(
-        "http://localhost:5000/api/auth/send-otp",
+        "https://student-alliance-api.code4bharat.com/api/auth/send-otp",
         { email }
       );
 

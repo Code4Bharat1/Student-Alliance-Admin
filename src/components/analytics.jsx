@@ -47,7 +47,7 @@ const AnalyticsDashboard = () => {
   useEffect(() => {
     const fetchOrderCount = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/orders");
+        const res = await axios.get("https://student-alliance-api.code4bharat.com/api/orders");
         setTotalOrders(res.data.length);
       } catch (err) {
         console.error("Failed to fetch orders:", err);
@@ -55,7 +55,7 @@ const AnalyticsDashboard = () => {
     };
     const fetchCustomerCount = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/customers");
+        const res = await axios.get("https://student-alliance-api.code4bharat.com/api/customers");
         setTotalCustomers(res.data.length);
       } catch (err) {
         console.error("Failed to fetch customers:", err);
@@ -64,7 +64,7 @@ const AnalyticsDashboard = () => {
     const fetchCustomersPerMonth = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/customers/stats/per-month"
+          "https://student-alliance-api.code4bharat.com/api/customers/stats/per-month"
         );
         setCustomersPerMonth(res.data);
       } catch (err) {
@@ -73,7 +73,7 @@ const AnalyticsDashboard = () => {
     };
     const fetchProducts = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/products");
+        const res = await axios.get("https://student-alliance-api.code4bharat.com/api/products");
         setProducts(res.data);
       } catch (err) {
         console.error("Failed to fetch products:", err);
@@ -81,7 +81,7 @@ const AnalyticsDashboard = () => {
     };
     const fetchRecentOrders = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/orders");
+        const res = await axios.get("https://student-alliance-api.code4bharat.com/api/orders");
         // Sort by createdAt or updatedAt and take the latest 5
         const sorted = res.data
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))

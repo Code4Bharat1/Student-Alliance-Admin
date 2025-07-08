@@ -30,7 +30,7 @@ export default function SignUpForm({ setIsLogin }) {
       
 
       const response = await axios.post(
-        "http://localhost:5000/api/auth/signup",
+        "https://student-alliance-api.code4bharat.com/api/auth/signup",
         {
           name: name.trim(),
           email: email.trim().toLowerCase(),

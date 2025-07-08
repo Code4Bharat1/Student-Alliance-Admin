@@ -15,7 +15,7 @@ const OrdersPage = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/orders");
+        const res = await axios.get("https://student-alliance-api.code4bharat.com/api/orders");
         setOrders(res.data);
         console.log(res.data);
       } catch (err) {

@@ -23,7 +23,7 @@ export default function ProductTable({ onEdit }) {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const res = await axios.get("http://localhost:5000/api/products");
+        const res = await axios.get("https://student-alliance-api.code4bharat.com/api/products");
         // Validate and normalize product data
         const validatedProducts = res.data.map(product => ({
           ...product,
@@ -64,7 +64,7 @@ export default function ProductTable({ onEdit }) {
     const productToDelete = products.find((p) => p._id === id);
     try {
       await axios.delete(
-        `http://localhost:5000/api/products/${productToDelete._id}`
+        `https://student-alliance-api.code4bharat.com/api/products/${productToDelete._id}`
       );
       setProducts((prev) => prev.filter((p) => p._id !== id));
     } catch (error) {

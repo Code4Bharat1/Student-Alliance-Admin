@@ -19,7 +19,7 @@ export default function Admin() {
       setLoading(true);
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/products/category/STEM%20%26%20Robotics"
+          "https://student-alliance-api.code4bharat.com/api/products/category/STEM%20%26%20Robotics"
         );
         setProducts(res.data);
         if (!res.data || res.data.length === 0) {

@@ -22,7 +22,7 @@ export default function Admin() {
       setLoading(true);
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/products/category/Digital%20Board "
+          "https://student-alliance-api.code4bharat.com/api/products/category/Digital%20Board "
         );
         setProducts(res.data);
         if (!res.data || res.data.length === 0) {
