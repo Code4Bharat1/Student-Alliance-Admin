@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import axios from "axios";
+
+const CACHE_KEY = "orders_data";
+const CACHE_DURATION = 3 * 60 * 1000; // 3 minutes (orders change frequently)
+const CACHE_METADATA_KEY = "cache_metadata_orders";
+const FILTERS_CACHE_KEY = "orders_filters";
 
 const OrdersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -11,97 +16,238 @@ const OrdersPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 7;
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState(null);
+  const [cacheInfo, setCacheInfo] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
 
+  // Calculate cache statistics
+  const calculateCacheStats = useCallback(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      const metadata = localStorage.getItem(CACHE_METADATA_KEY);
+      
+      if (cached && metadata) {
+        const { timestamp, accessCount, lastAccessed } = JSON.parse(metadata);
+        const now = Date.now();
+        const age = now - timestamp;
+        const remainingTime = Math.max(0, CACHE_DURATION - age);
+        const sizeInKB = (new Blob([cached]).size / 1024).toFixed(2);
+        
+        return {
+          isValid: age < CACHE_DURATION,
+          ageInMinutes: Math.floor(age / 60000),
+          remainingMinutes: Math.ceil(remainingTime / 60000),
+          sizeInKB,
+          accessCount: accessCount || 0,
+          lastAccessed: lastAccessed ? new Date(lastAccessed).toLocaleString() : 'Never'
+        };
+      }
+    } catch (error) {
+      console.error("Error calculating cache stats:", error);
+    }
+    return null;
+  }, []);
+
+  // Load cached data
+  const loadCachedData = useCallback(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      const metadata = localStorage.getItem(CACHE_METADATA_KEY);
+      
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const now = Date.now();
+        const age = now - timestamp;
+        
+        if (age < CACHE_DURATION) {
+          const meta = metadata ? JSON.parse(metadata) : {};
+          const updatedMeta = {
+            timestamp,
+            accessCount: (meta.accessCount || 0) + 1,
+            lastAccessed: now
+          };
+          localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(updatedMeta));
+          
+          const remainingMinutes = Math.ceil((CACHE_DURATION - age) / 60000);
+          setCacheStatus(`✓ Loaded from cache (${remainingMinutes}m remaining)`);
+          setTimeout(() => setCacheStatus(null), 4000);
+          
+          return data;
+        } else {
+          setCacheStatus("⚠ Cache expired - fetching fresh data");
+          setTimeout(() => setCacheStatus(null), 3000);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading cached data:", error);
+    }
+    return null;
+  }, []);
+
+  // Save data to cache
+  const saveCachedData = useCallback((data) => {
+    try {
+      const cacheObject = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObject));
+      
+      const metadata = {
+        timestamp: Date.now(),
+        accessCount: 0,
+        lastAccessed: Date.now(),
+        itemCount: data.length
+      };
+      localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(metadata));
+      
+      setCacheStatus("💾 Orders cached successfully");
+      setTimeout(() => setCacheStatus(null), 3000);
+    } catch (error) {
+      console.error("Error saving cached data:", error);
+    }
+  }, []);
+
+  // Load filter preferences
+  const loadFilterPreferences = useCallback(() => {
+    try {
+      const prefs = localStorage.getItem(FILTERS_CACHE_KEY);
+      if (prefs) {
+        const { statusFilter: savedStatus, autoRefresh: savedAutoRefresh } = JSON.parse(prefs);
+        if (savedStatus) setStatusFilter(savedStatus);
+        if (savedAutoRefresh !== undefined) setAutoRefresh(savedAutoRefresh);
+      }
+    } catch (error) {
+      console.error("Error loading preferences:", error);
+    }
+  }, []);
+
+  // Save filter preferences
+  const saveFilterPreferences = useCallback(() => {
+    try {
+      const prefs = { statusFilter, autoRefresh };
+      localStorage.setItem(FILTERS_CACHE_KEY, JSON.stringify(prefs));
+    } catch (error) {
+      console.error("Error saving preferences:", error);
+    }
+  }, [statusFilter, autoRefresh]);
+
+  // Initial load
   useEffect(() => {
+    loadFilterPreferences();
+    
     const fetchOrders = async () => {
+      const cachedOrders = loadCachedData();
+      if (cachedOrders && cachedOrders.length > 0) {
+        setOrders(cachedOrders);
+        setCacheInfo(calculateCacheStats());
+        return;
+      }
+
+      setLoading(true);
       try {
         const res = await axios.get("https://student-alliance-api.code4bharat.com/api/orders");
         setOrders(res.data);
-        console.log(res.data);
+        saveCachedData(res.data);
+        setCacheInfo(calculateCacheStats());
       } catch (err) {
         console.error("Failed to fetch orders:", err);
+        setOfflineMode(true);
+        setCacheStatus("❌ Network error - using offline mode");
+      } finally {
+        setLoading(false);
       }
     };
+    
     fetchOrders();
-  }, []);
+  }, [loadCachedData, saveCachedData, calculateCacheStats, loadFilterPreferences]);
 
-  // Sample orders data
-  // const orders = [
-  //   {
-  //     id: 'EC-1001',
-  //     customer: 'John Smith',
-  //     date: 'May 15, 2023',
-  //     amount: 245.99,
-  //     status: 'delivered',
-  //     items: 3,
-  //   },
-  //   {
-  //     id: 'EC-1002',
-  //     customer: 'Sarah Johnson',
-  //     date: 'May 16, 2023',
-  //     amount: 189.5,
-  //     status: 'shipped',
-  //     items: 2,
-  //   },
-  //   {
-  //     id: 'EC-1003',
-  //     customer: 'Michael Brown',
-  //     date: 'May 17, 2023',
-  //     amount: 320.75,
-  //     status: 'processing',
-  //     items: 5,
-  //   },
-  //   {
-  //     id: 'EC-1004',
-  //     customer: 'Emily Davis',
-  //     date: 'May 18, 2023',
-  //     amount: 145.2,
-  //     status: 'pending',
-  //     items: 1,
-  //   },
-  //   {
-  //     id: 'EC-1005',
-  //     customer: 'Robert Wilson',
-  //     date: 'May 19, 2023',
-  //     amount: 89.99,
-  //     status: 'cancelled',
-  //     items: 2,
-  //   },
-  //   {
-  //     id: 'EC-1006',
-  //     customer: 'Jennifer Lee',
-  //     date: 'May 20, 2023',
-  //     amount: 210.45,
-  //     status: 'delivered',
-  //     items: 4,
-  //   },
-  //   {
-  //     id: 'EC-1007',
-  //     customer: 'David Miller',
-  //     date: 'May 21, 2023',
-  //     amount: 175.3,
-  //     status: 'shipped',
-  //     items: 3,
-  //   },
-  //   {
-  //     id: 'EC-1008',
-  //     customer: 'Lisa Taylor',
-  //     date: 'May 22, 2023',
-  //     amount: 299.99,
-  //     status: 'processing',
-  //     items: 2,
-  //   },
-  //   {
-  //     id: 'EC-1009',
-  //     customer: 'James Anderson',
-  //     date: 'May 23, 2023',
-  //     amount: 150.0,
-  //     status: 'pending',
-  //     items: 1,
-  //   },
-  // ];
+  // Auto-refresh timer
+  useEffect(() => {
+    if (!autoRefresh) return;
+    
+    const interval = setInterval(() => {
+      const stats = calculateCacheStats();
+      if (stats && !stats.isValid) {
+        handleRefresh(true);
+      }
+    }, 60000);
 
-  // Filter orders based on search and status
+    return () => clearInterval(interval);
+  }, [autoRefresh, calculateCacheStats]);
+
+  // Save preferences when changed
+  useEffect(() => {
+    saveFilterPreferences();
+  }, [statusFilter, autoRefresh, saveFilterPreferences]);
+
+  // Update cache info periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCacheInfo(calculateCacheStats());
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [calculateCacheStats]);
+
+  const handleRefresh = async (silent = false) => {
+    setLoading(true);
+    if (!silent) {
+      setCacheStatus("🔄 Refreshing orders...");
+    }
+    
+    try {
+      const res = await axios.get("https://student-alliance-api.code4bharat.com/api/orders");
+      setOrders(res.data);
+      saveCachedData(res.data);
+      setCacheInfo(calculateCacheStats());
+      setOfflineMode(false);
+      
+      if (!silent) {
+        setCacheStatus("✓ Orders refreshed successfully!");
+        setTimeout(() => setCacheStatus(null), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to refresh orders:", err);
+      setOfflineMode(true);
+      setCacheStatus("❌ Refresh failed - using cached data");
+      setTimeout(() => setCacheStatus(null), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearCache = () => {
+    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(CACHE_METADATA_KEY);
+    setCacheInfo(null);
+    setCacheStatus("🗑️ Cache cleared successfully!");
+    setTimeout(() => setCacheStatus(null), 2000);
+  };
+
+  const handleExportCache = () => {
+    try {
+      const data = {
+        orders,
+        metadata: calculateCacheStats(),
+        exportDate: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders-cache-${Date.now()}.json`;
+      a.click();
+      setCacheStatus("💾 Orders exported successfully!");
+      setTimeout(() => setCacheStatus(null), 3000);
+    } catch (error) {
+      console.error("Export failed:", error);
+    }
+  };
+
+  // Filter orders
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order._id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -186,10 +332,93 @@ const OrdersPage = () => {
         </Link>
       </nav>
 
+      {/* Cache Status Banner */}
+      {cacheStatus && (
+        <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm flex items-center justify-between shadow-sm">
+          <span className="font-medium">{cacheStatus}</span>
+          <button
+            onClick={() => setCacheStatus(null)}
+            className="ml-4 text-blue-600 hover:text-blue-800 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Offline Mode Banner */}
+      {offlineMode && (
+        <div className="mx-6 mt-4 p-3 bg-orange-50 border border-orange-200 text-orange-800 rounded-lg text-sm flex items-center gap-2">
+          <span className="text-lg">📡</span>
+          <span className="font-medium">Offline Mode - Using cached data</span>
+        </div>
+      )}
+
+      {/* Cache Controls */}
+      <div className="px-6 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white rounded-lg shadow">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleRefresh(false)}
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <span className={loading ? "animate-spin" : ""}>🔄</span>
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+            
+            <button
+              onClick={handleClearCache}
+              className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
+            >
+              🗑️ Clear Cache
+            </button>
+
+            <button
+              onClick={handleExportCache}
+              className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+            >
+              💾 Export
+            </button>
+
+            <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">Auto-refresh</span>
+            </label>
+          </div>
+
+          {/* Cache Info */}
+          {cacheInfo && (
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Status: </span>
+                <span className="font-bold text-blue-700">
+                  {cacheInfo.isValid ? "✓ Active" : "❌ Expired"}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">Expires: </span>
+                <span className="font-bold text-blue-700">{cacheInfo.remainingMinutes}m</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Size: </span>
+                <span className="font-bold text-blue-700">{cacheInfo.sizeInKB} KB</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Access: </span>
+                <span className="font-bold text-blue-700">{cacheInfo.accessCount}x</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Search Bar and Filters Code :- */}
-
         {/* Stats cards */}
         <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-4">
           <div className="p-6 bg-white rounded-lg shadow">
@@ -208,7 +437,6 @@ const OrdersPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     strokeLinecap="round"
@@ -218,25 +446,6 @@ const OrdersPage = () => {
                   />
                 </svg>
               </div>
-            </div>
-            <div className="mt-4">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-md">
-                <svg
-                  className="w-3 h-3 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 10l7-7m0 0l7 7m-7-7v18"
-                  />
-                </svg>
-                12% from last month
-              </span>
             </div>
           </div>
 
@@ -249,7 +458,7 @@ const OrdersPage = () => {
                 <p className="mt-1 text-3xl font-semibold text-gray-900">
                   ₹
                   {orders
-                    .reduce((sum, order) => sum + order.amount, 0)
+                    .reduce((sum, order) => sum + (order.total || order.amount || 0), 0)
                     .toFixed(2)}
                 </p>
               </div>
@@ -259,7 +468,6 @@ const OrdersPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     strokeLinecap="round"
@@ -269,25 +477,6 @@ const OrdersPage = () => {
                   />
                 </svg>
               </div>
-            </div>
-            <div className="mt-4">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-md">
-                <svg
-                  className="w-3 h-3 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 10l7-7m0 0l7 7m-7-7v18"
-                  />
-                </svg>
-                8% from last month
-              </span>
             </div>
           </div>
 
@@ -299,10 +488,10 @@ const OrdersPage = () => {
                 </p>
                 <p className="mt-1 text-3xl font-semibold text-gray-900">
                   ₹
-                  {(
-                    orders.reduce((sum, order) => sum + order.amount, 0) /
+                  {orders.length > 0 ? (
+                    orders.reduce((sum, order) => sum + (order.total || order.amount || 0), 0) /
                     orders.length
-                  ).toFixed(2)}
+                  ).toFixed(2) : "0.00"}
                 </p>
               </div>
               <div className="p-3 text-yellow-600 bg-yellow-100 rounded-full">
@@ -311,7 +500,6 @@ const OrdersPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     strokeLinecap="round"
@@ -322,25 +510,6 @@ const OrdersPage = () => {
                 </svg>
               </div>
             </div>
-            <div className="mt-4">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-md">
-                <svg
-                  className="w-3 h-3 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                  />
-                </svg>
-                3% from last month
-              </span>
-            </div>
           </div>
 
           <div className="p-6 bg-white rounded-lg shadow">
@@ -350,7 +519,7 @@ const OrdersPage = () => {
                   Pending Orders
                 </p>
                 <p className="mt-1 text-3xl font-semibold text-gray-900">
-                  {orders.filter((order) => order.status === "pending").length}
+                  {orders.filter((order) => order.orderStatus?.toLowerCase() === "pending").length}
                 </p>
               </div>
               <div className="p-3 text-red-600 bg-red-100 rounded-full">
@@ -359,7 +528,6 @@ const OrdersPage = () => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     strokeLinecap="round"
@@ -369,25 +537,6 @@ const OrdersPage = () => {
                   />
                 </svg>
               </div>
-            </div>
-            <div className="mt-4">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-md">
-                <svg
-                  className="w-3 h-3 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 10l7-7m0 0l7 7m-7-7v18"
-                  />
-                </svg>
-                5% from last month
-              </span>
             </div>
           </div>
         </div>
@@ -399,46 +548,25 @@ const OrdersPage = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                    >
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Order ID
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                    >
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Customer
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                    >
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Date
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                    >
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Amount
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                    >
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Status
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                    >
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Items
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase"
-                    >
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
                       Actions
                     </th>
                   </tr>
@@ -468,7 +596,7 @@ const OrdersPage = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
-                            ₹{order.total?.toFixed(2) || "0.00"}
+                            ₹{(order.total || order.amount || 0).toFixed(2)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -484,34 +612,10 @@ const OrdersPage = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => alert(`Viewing order ₹{order.id}`)}
-                            className="mr-2 text-indigo-600 hover:text-indigo-900"
-                          >
+                          <button className="mr-2 text-indigo-600 hover:text-indigo-900">
                             View
                           </button>
-                          {order.status !== "delivered" &&
-                            order.status !== "cancelled" && (
-                              <button
-                                onClick={() =>
-                                  alert(`Editing order ₹{order.id}`)
-                                }
-                                className="mr-2 text-yellow-600 hover:text-yellow-900"
-                              >
-                              </button>
-                            )}
-                          <button
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `Are you sure you want to delete order ₹{order.id}?`
-                                )
-                              ) {
-                                alert(`Order ₹{order.id} deleted`);
-                              }
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
+                          <button className="text-red-600 hover:text-red-900">
                             Delete
                           </button>
                         </td>
@@ -523,7 +627,7 @@ const OrdersPage = () => {
                         colSpan="7"
                         className="px-6 py-4 text-sm text-center text-gray-500"
                       >
-                        No orders found matching your criteria.
+                        {loading ? "Loading orders..." : "No orders found matching your criteria."}
                       </td>
                     </tr>
                   )}
@@ -550,9 +654,9 @@ const OrdersPage = () => {
                       setCurrentPage((prev) => Math.max(prev - 1, 1))
                     }
                     disabled={currentPage === 1}
-                    className={`px-3 py-1 text-sm rounded-md ₹{
+                    className={`px-3 py-1 text-sm rounded-md ${
                       currentPage === 1
-                        ? 'bg-gray-100  cursor-not-allowed'
+                        ? 'bg-gray-100 cursor-not-allowed'
                         : 'bg-white text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -563,7 +667,7 @@ const OrdersPage = () => {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 text-sm rounded-md ₹{
+                        className={`px-3 py-1 text-sm rounded-md ${
                           currentPage === page
                             ? 'bg-indigo-600 text-white'
                             : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -578,7 +682,7 @@ const OrdersPage = () => {
                       setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                     }
                     disabled={currentPage === totalPages}
-                    className={`px-3 py-1 text-sm rounded-md ₹{
+                    className={`px-3 py-1 text-sm rounded-md ${
                       currentPage === totalPages
                         ? 'bg-gray-100 cursor-not-allowed'
                         : 'bg-white text-gray-700 hover:bg-gray-50'

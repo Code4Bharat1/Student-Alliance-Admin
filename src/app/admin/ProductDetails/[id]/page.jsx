@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import axios from "axios";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+
+const CACHE_KEY_PREFIX = "product_detail_";
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for individual products
+const CACHE_METADATA_KEY = "cache_metadata_product_details";
 
 async function getProduct(id) {
   try {
@@ -68,17 +72,141 @@ export default function ProductDetail({ params }) {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState(null);
+  const [cacheInfo, setCacheInfo] = useState(null);
 
   const unwrappeParams = use(params);
   const productId = unwrappeParams?.id;
+
+  // Calculate cache statistics
+  const calculateCacheStats = useCallback(() => {
+    try {
+      const cacheKey = CACHE_KEY_PREFIX + productId;
+      const cached = localStorage.getItem(cacheKey);
+      const allMetadata = localStorage.getItem(CACHE_METADATA_KEY);
+      
+      if (cached && allMetadata) {
+        const metadata = JSON.parse(allMetadata);
+        const productMeta = metadata[productId];
+        
+        if (productMeta) {
+          const { timestamp, accessCount, lastAccessed } = productMeta;
+          const now = Date.now();
+          const age = now - timestamp;
+          const remainingTime = Math.max(0, CACHE_DURATION - age);
+          const sizeInKB = (new Blob([cached]).size / 1024).toFixed(2);
+          
+          return {
+            isValid: age < CACHE_DURATION,
+            ageInMinutes: Math.floor(age / 60000),
+            remainingMinutes: Math.ceil(remainingTime / 60000),
+            sizeInKB,
+            accessCount: accessCount || 0,
+            lastAccessed: lastAccessed ? new Date(lastAccessed).toLocaleString() : 'Never'
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Error calculating cache stats:", error);
+    }
+    return null;
+  }, [productId]);
+
+  // Load cached data
+  const loadCachedData = useCallback(() => {
+    try {
+      const cacheKey = CACHE_KEY_PREFIX + productId;
+      const cached = localStorage.getItem(cacheKey);
+      const allMetadata = localStorage.getItem(CACHE_METADATA_KEY);
+      
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const now = Date.now();
+        const age = now - timestamp;
+        
+        if (age < CACHE_DURATION) {
+          // Update access metadata
+          const metadata = allMetadata ? JSON.parse(allMetadata) : {};
+          const productMeta = metadata[productId] || { timestamp, accessCount: 0 };
+          
+          metadata[productId] = {
+            ...productMeta,
+            accessCount: productMeta.accessCount + 1,
+            lastAccessed: now
+          };
+          
+          localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(metadata));
+          
+          const remainingMinutes = Math.ceil((CACHE_DURATION - age) / 60000);
+          setCacheStatus(`✓ Loaded from cache (${remainingMinutes}m remaining)`);
+          setTimeout(() => setCacheStatus(null), 4000);
+          
+          return data;
+        } else {
+          setCacheStatus("⚠ Cache expired - fetching fresh data");
+          setTimeout(() => setCacheStatus(null), 3000);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading cached data:", error);
+    }
+    return null;
+  }, [productId]);
+
+  // Save data to cache
+  const saveCachedData = useCallback((data) => {
+    try {
+      const cacheKey = CACHE_KEY_PREFIX + productId;
+      const cacheObject = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(cacheKey, JSON.stringify(cacheObject));
+      
+      // Update metadata
+      const allMetadata = localStorage.getItem(CACHE_METADATA_KEY);
+      const metadata = allMetadata ? JSON.parse(allMetadata) : {};
+      
+      metadata[productId] = {
+        timestamp: Date.now(),
+        accessCount: 0,
+        lastAccessed: Date.now(),
+        productName: data.name
+      };
+      
+      localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(metadata));
+      
+      setCacheStatus("💾 Product cached successfully");
+      setTimeout(() => setCacheStatus(null), 3000);
+    } catch (error) {
+      console.error("Error saving cached data:", error);
+      if (error.name === 'QuotaExceededError') {
+        setCacheStatus("⚠ Storage quota exceeded");
+        setTimeout(() => setCacheStatus(null), 4000);
+      }
+    }
+  }, [productId]);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Try cache first
+        const cachedProduct = loadCachedData();
+        if (cachedProduct) {
+          setProduct(cachedProduct);
+          setCacheInfo(calculateCacheStats());
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch from API
         const productData = await getProduct(productId);
         setProduct(productData);
+        saveCachedData(productData);
+        setCacheInfo(calculateCacheStats());
       } catch (err) {
         console.error("Error fetching product:", err);
         setError(err.message);
@@ -90,7 +218,45 @@ export default function ProductDetail({ params }) {
     if (productId) {
       fetchProduct();
     }
-  }, [productId]);
+  }, [productId, loadCachedData, saveCachedData, calculateCacheStats]);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setCacheStatus("🔄 Refreshing product...");
+    
+    try {
+      const productData = await getProduct(productId);
+      setProduct(productData);
+      saveCachedData(productData);
+      setCacheInfo(calculateCacheStats());
+      setCacheStatus("✓ Product refreshed!");
+      setTimeout(() => setCacheStatus(null), 3000);
+    } catch (err) {
+      console.error("Error refreshing product:", err);
+      setError(err.message);
+      setCacheStatus("❌ Refresh failed");
+      setTimeout(() => setCacheStatus(null), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearCache = () => {
+    const cacheKey = CACHE_KEY_PREFIX + productId;
+    localStorage.removeItem(cacheKey);
+    
+    // Update metadata
+    const allMetadata = localStorage.getItem(CACHE_METADATA_KEY);
+    if (allMetadata) {
+      const metadata = JSON.parse(allMetadata);
+      delete metadata[productId];
+      localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(metadata));
+    }
+    
+    setCacheInfo(null);
+    setCacheStatus("🗑️ Cache cleared!");
+    setTimeout(() => setCacheStatus(null), 2000);
+  };
 
   const handleImageClick = (index) => {
     setSelectedImage(index);
@@ -113,7 +279,6 @@ export default function ProductDetail({ params }) {
           <motion.div
             animate={{
               scale: [1, 1.1, 1],
-              
             }}
             transition={{
               duration: 1.5,
@@ -163,8 +328,7 @@ export default function ProductDetail({ params }) {
           className="max-w-md w-full p-6 bg-white rounded-xl shadow-lg text-center"
         >
           <motion.div 
-            animate={{ 
-            }}
+            animate={{ }}
             transition={{ duration: 0.5 }}
             className="text-red-500 mb-4"
           >
@@ -249,7 +413,79 @@ export default function ProductDetail({ params }) {
       variants={fadeIn}
       className="min-h-screen ml-56 bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8"
     >
+      {/* Cache Status Banner */}
+      <AnimatePresence>
+        {cacheStatus && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-7xl mx-auto mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm flex items-center justify-between shadow-sm"
+          >
+            <span className="font-medium">{cacheStatus}</span>
+            <button
+              onClick={() => setCacheStatus(null)}
+              className="ml-4 text-blue-600 hover:text-blue-800 font-bold"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-7xl mx-auto">
+        {/* Cache Controls */}
+        <div className="mb-4 flex justify-end gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+          >
+            <span className={loading ? "animate-spin" : ""}>🔄</span>
+            Refresh
+          </button>
+          <button
+            onClick={handleClearCache}
+            className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
+          >
+            🗑️ Clear Cache
+          </button>
+        </div>
+
+        {/* Cache Info */}
+        {cacheInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg"
+          >
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+              <div>
+                <div className="text-gray-600 font-medium">Status</div>
+                <div className="text-blue-700 font-bold">
+                  {cacheInfo.isValid ? "✓ Cached" : "❌ Expired"}
+                </div>
+              </div>
+              <div>
+                <div className="text-gray-600 font-medium">Expires</div>
+                <div className="text-blue-700 font-bold">{cacheInfo.remainingMinutes}m</div>
+              </div>
+              <div>
+                <div className="text-gray-600 font-medium">Size</div>
+                <div className="text-blue-700 font-bold">{cacheInfo.sizeInKB} KB</div>
+              </div>
+              <div>
+                <div className="text-gray-600 font-medium">Views</div>
+                <div className="text-blue-700 font-bold">{cacheInfo.accessCount}</div>
+              </div>
+              <div>
+                <div className="text-gray-600 font-medium">Last View</div>
+                <div className="text-blue-700 font-bold text-xs">{cacheInfo.lastAccessed}</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -448,7 +684,6 @@ export default function ProductDetail({ params }) {
                     </motion.div>
                   )}
                 </div>
-                
               </div>
             </div>
           </div>

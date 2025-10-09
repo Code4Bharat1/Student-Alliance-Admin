@@ -26,30 +26,25 @@ export default function LoginForm({ setIsLogin }) {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.post("https://student-alliance-api.code4bharat.com/api/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+        "https://student-alliance-api.code4bharat.com/api/auth/login",
+        { email, password }
+      );
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-
       toast.success("Login successful!");
       router.push("/admin/dashboard");
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Login failed. Please try again."
-      );
+      setError(err.response?.data?.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
-    <div className="min-h-screen text-black flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 px-4">
       <AnimatePresence>
         {isMounted && (
           <motion.div
@@ -57,19 +52,19 @@ export default function LoginForm({ setIsLogin }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
-            className="w-full max-w-md mx-4"
+            className="w-full max-w-md"
           >
-            <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200 backdrop-blur-sm bg-opacity-90">
+            <div className="bg-white backdrop-blur-sm bg-opacity-95 rounded-2xl shadow-2xl p-10 border border-gray-200">
               <motion.div
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2 }}
                 className="flex justify-center mb-6"
               >
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-xl">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-8 w-8 text-white"
+                    className="h-10 w-10 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -84,7 +79,7 @@ export default function LoginForm({ setIsLogin }) {
                 </div>
               </motion.div>
 
-              <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">
+              <h2 className="text-3xl font-extrabold text-gray-800 mb-2 text-center">
                 Welcome Back
               </h2>
               <p className="text-gray-500 text-center mb-6">
@@ -92,19 +87,20 @@ export default function LoginForm({ setIsLogin }) {
               </p>
 
               {error && (
-                <div className="text-red-500 text-center mb-4">{error}</div>
+                <div className="text-red-500 text-center mb-4 font-medium">{error}</div>
               )}
 
               <form onSubmit={handleSubmit}>
+                {/* Email Input */}
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mb-4"
+                  className="mb-5"
                 >
                   <label
                     htmlFor="email"
-                    className="block text-gray-700 text-sm font-medium mb-2"
+                    className="block text-gray-700 text-sm font-semibold mb-2"
                   >
                     Email
                   </label>
@@ -114,7 +110,7 @@ export default function LoginForm({ setIsLogin }) {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-10"
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-12 shadow-sm"
                       placeholder="your@email.com"
                       required
                     />
@@ -132,15 +128,16 @@ export default function LoginForm({ setIsLogin }) {
                   </div>
                 </motion.div>
 
+                {/* Password Input */}
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="mb-4"
+                  className="mb-5"
                 >
                   <label
                     htmlFor="password"
-                    className="block text-gray-700 text-sm font-medium mb-2"
+                    className="block text-gray-700 text-sm font-semibold mb-2"
                   >
                     Password
                   </label>
@@ -150,7 +147,7 @@ export default function LoginForm({ setIsLogin }) {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-10 pr-10"
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-12 pr-12 shadow-sm"
                       placeholder="••••••••"
                       required
                       minLength="6"
@@ -217,6 +214,7 @@ export default function LoginForm({ setIsLogin }) {
                   </div>
                 </motion.div>
 
+                {/* Remember & Forgot */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -231,7 +229,7 @@ export default function LoginForm({ setIsLogin }) {
                     />
                     <label
                       htmlFor="remember-me"
-                      className="ml-2 block text-sm text-gray-700"
+                      className="ml-2 block text-sm text-gray-700 font-medium"
                     >
                       Remember me
                     </label>
@@ -244,6 +242,7 @@ export default function LoginForm({ setIsLogin }) {
                   </a>
                 </motion.div>
 
+                {/* Submit Button */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -251,7 +250,7 @@ export default function LoginForm({ setIsLogin }) {
                 >
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
+                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center"
                     disabled={loading}
                   >
                     <span>{loading ? "Logging in..." : "Login"}</span>
