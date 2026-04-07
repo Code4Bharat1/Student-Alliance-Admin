@@ -148,7 +148,7 @@ const OrdersPage = () => {
 
       setLoading(true);
       try {
-        const res = await axios.get("https://student-alliance-api.code4bharat.com/api/orders");
+        const res = await axios.get("https://api-studentalliance.nexcorealliance.com/api/orders");
         setOrders(res.data);
         saveCachedData(res.data);
         setCacheInfo(calculateCacheStats());
@@ -199,7 +199,7 @@ const OrdersPage = () => {
     }
     
     try {
-      const res = await axios.get("https://student-alliance-api.code4bharat.com/api/orders");
+      const res = await axios.get("https://api-studentalliance.nexcorealliance.com/api/orders");
       setOrders(res.data);
       saveCachedData(res.data);
       setCacheInfo(calculateCacheStats());

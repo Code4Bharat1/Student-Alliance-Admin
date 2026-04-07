@@ -175,8 +175,8 @@ export default function Modal({ product, onClose, onSave }) {
     setSaving(true);
     try {
       const url = product
-        ? `https://student-alliance-api.code4bharat.com/api/products/${product._id}`
-        : "https://student-alliance-api.code4bharat.com/api/products";
+        ? `https://api-studentalliance.nexcorealliance.com/api/products/${product._id}`
+        : "https://api-studentalliance.nexcorealliance.com/api/products";
 
       const method = product ? "PUT" : "POST";
 

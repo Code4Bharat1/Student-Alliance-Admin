@@ -27,7 +27,7 @@ export default function LoginForm({ setIsLogin }) {
     setLoading(true);
     try {
       const res = await axios.post(
-        "https://student-alliance-api.code4bharat.com/api/auth/login",
+        "https://api-studentalliance.nexcorealliance.com/api/auth/login",
         { email, password }
       );
       localStorage.setItem("token", res.data.token);

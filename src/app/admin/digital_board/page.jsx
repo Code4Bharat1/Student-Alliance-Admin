@@ -174,7 +174,7 @@ export default function Admin() {
       setLoading(true);
       try {
         const res = await axios.get(
-          "https://student-alliance-api.code4bharat.com/api/products/category/Digital%20Board "
+          "https://api-studentalliance.nexcorealliance.com/api/products/category/Digital%20Board "
         );
         setProducts(res.data);
         saveCachedData(res.data);
@@ -252,7 +252,7 @@ export default function Admin() {
     
     try {
       const res = await axios.get(
-        "https://student-alliance-api.code4bharat.com/api/products/category/Digital%20Board "
+        "https://api-studentalliance.nexcorealliance.com/api/products/category/Digital%20Board "
       );
       setProducts(res.data);
       saveCachedData(res.data);

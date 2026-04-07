@@ -176,7 +176,7 @@ export default function Admin() {
       setLoading(true);
       try {
         const res = await axios.get(
-          "https://student-alliance-api.code4bharat.com/api/products/category/STEM%20%26%20Robotics"
+          "https://api-studentalliance.nexcorealliance.com/api/products/category/STEM%20%26%20Robotics"
         );
         setProducts(res.data);
         saveCachedData(res.data);
@@ -254,7 +254,7 @@ export default function Admin() {
     
     try {
       const res = await axios.get(
-        "https://student-alliance-api.code4bharat.com/api/products/category/STEM%20%26%20Robotics"
+        "https://api-studentalliance.nexcorealliance.com/api/products/category/STEM%20%26%20Robotics"
       );
       setProducts(res.data);
       saveCachedData(res.data);

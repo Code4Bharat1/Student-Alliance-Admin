@@ -51,7 +51,7 @@ const AnalyticsDashboard = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const ordersRes = await fetch("https://student-alliance-api.code4bharat.com/api/orders");
+        const ordersRes = await fetch("https://api-studentalliance.nexcorealliance.com/api/orders");
         const ordersData = await ordersRes.json();
         setTotalOrders(ordersData.length);
         
@@ -60,17 +60,17 @@ const AnalyticsDashboard = () => {
           .slice(0, 5);
         setRecentOrders(sorted);
 
-        const customersRes = await fetch("https://student-alliance-api.code4bharat.com/api/customers");
+        const customersRes = await fetch("https://api-studentalliance.nexcorealliance.com/api/customers");
         const customersData = await customersRes.json();
         setTotalCustomers(customersData.length);
 
         const monthlyRes = await fetch(
-          "https://student-alliance-api.code4bharat.com/api/customers/stats/per-month"
+          "https://api-studentalliance.nexcorealliance.com/api/customers/stats/per-month"
         );
         const monthlyData = await monthlyRes.json();
         setCustomersPerMonth(monthlyData);
 
-        const productsRes = await fetch("https://student-alliance-api.code4bharat.com/api/products");
+        const productsRes = await fetch("https://api-studentalliance.nexcorealliance.com/api/products");
         const productsData = await productsRes.json();
         setProducts(productsData);
       } catch (err) {

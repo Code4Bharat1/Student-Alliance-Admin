@@ -17,7 +17,7 @@ async function getProduct(id) {
 
     console.log("🔍 Fetching product with ID:", id);
 
-    const res = await axios.get(`https://student-alliance-api.code4bharat.com/api/products/${id}`);
+    const res = await axios.get(`https://api-studentalliance.nexcorealliance.com/api/products/${id}`);
 
     if (res.status !== 200) {
       throw new Error(`Unexpected response status: ${res.status}`);

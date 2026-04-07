@@ -25,7 +25,7 @@ export default function Admin() {
       setLoading(true);
       try {
         const res = await fetch(
-          "https://student-alliance-api.code4bharat.com/api/products/category/IFPD"
+          "https://api-studentalliance.nexcorealliance.com/api/products/category/IFPD"
         );
         const data = await res.json();
         setProducts(data);

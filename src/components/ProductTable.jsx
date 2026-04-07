@@ -18,7 +18,7 @@ export function ProductTable({ onEdit }) {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch("https://student-alliance-api.code4bharat.com/api/products");
+        const res = await fetch("https://api-studentalliance.nexcorealliance.com/api/products");
         const data = await res.json();
         const validatedProducts = data.map(product => ({
           ...product,
@@ -75,7 +75,7 @@ export function ProductTable({ onEdit }) {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`https://student-alliance-api.code4bharat.com/api/products/${id}`, {
+      await fetch(`https://api-studentalliance.nexcorealliance.com/api/products/${id}`, {
         method: 'DELETE'
       });
       setProducts((prev) => prev.filter((p) => p._id !== id));
@@ -106,7 +106,7 @@ export function ProductTable({ onEdit }) {
     }
 
     try {
-      const res = await fetch(`https://student-alliance-api.code4bharat.com/api/products/${editingProduct._id}`, {
+      const res = await fetch(`https://api-studentalliance.nexcorealliance.com/api/products/${editingProduct._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingProduct)

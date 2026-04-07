@@ -7,7 +7,7 @@ export const loginUser = createAsyncThunk(
     "auth/loginUser",
     async ({ email, password }, thunkAPI) => {
         try {
-            const res = await axios.post("https://student-alliance-api.code4bharat.com/api/auth/login", { email, password });
+            const res = await axios.post("https://api-studentalliance.nexcorealliance.com/api/auth/login", { email, password });
             return res.data;
         } catch (error) {
             return thunkAPI.rejectWithValue(error.response.data.message || "Login failed");
