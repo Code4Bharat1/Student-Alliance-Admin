@@ -34,21 +34,23 @@ export default function Admin() {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       const metadata = localStorage.getItem(CACHE_METADATA_KEY);
-      
+
       if (cached && metadata) {
         const { timestamp, accessCount, lastAccessed } = JSON.parse(metadata);
         const now = Date.now();
         const age = now - timestamp;
         const remainingTime = Math.max(0, CACHE_DURATION - age);
         const sizeInKB = (new Blob([cached]).size / 1024).toFixed(2);
-        
+
         return {
           isValid: age < CACHE_DURATION,
           ageInMinutes: Math.floor(age / 60000),
           remainingMinutes: Math.ceil(remainingTime / 60000),
           sizeInKB,
           accessCount: accessCount || 0,
-          lastAccessed: lastAccessed ? new Date(lastAccessed).toLocaleString() : 'Never'
+          lastAccessed: lastAccessed
+            ? new Date(lastAccessed).toLocaleString()
+            : "Never",
         };
       }
     } catch (error) {
@@ -62,25 +64,27 @@ export default function Admin() {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       const metadata = localStorage.getItem(CACHE_METADATA_KEY);
-      
+
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
         const now = Date.now();
         const age = now - timestamp;
-        
+
         if (age < CACHE_DURATION) {
           const meta = metadata ? JSON.parse(metadata) : {};
           const updatedMeta = {
             timestamp,
             accessCount: (meta.accessCount || 0) + 1,
-            lastAccessed: now
+            lastAccessed: now,
           };
           localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(updatedMeta));
-          
+
           const remainingMinutes = Math.ceil((CACHE_DURATION - age) / 60000);
-          setCacheStatus(`✓ Loaded from cache (${remainingMinutes}m remaining)`);
+          setCacheStatus(
+            `✓ Loaded from cache (${remainingMinutes}m remaining)`,
+          );
           setTimeout(() => setCacheStatus(null), 4000);
-          
+
           return data;
         } else {
           setCacheStatus("⚠ Cache expired - fetching fresh data");
@@ -100,23 +104,23 @@ export default function Admin() {
     try {
       const cacheObject = {
         data,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(CACHE_KEY, JSON.stringify(cacheObject));
-      
+
       const metadata = {
         timestamp: Date.now(),
         accessCount: 0,
         lastAccessed: Date.now(),
-        itemCount: data.length
+        itemCount: data.length,
       };
       localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(metadata));
-      
+
       setCacheStatus("💾 Data cached successfully");
       setTimeout(() => setCacheStatus(null), 3000);
     } catch (error) {
       console.error("Error saving cached data:", error);
-      if (error.name === 'QuotaExceededError') {
+      if (error.name === "QuotaExceededError") {
         setCacheStatus("⚠ Storage quota exceeded - cache not saved");
         setTimeout(() => setCacheStatus(null), 4000);
       }
@@ -128,7 +132,8 @@ export default function Admin() {
     try {
       const prefs = localStorage.getItem(USER_PREFS_KEY);
       if (prefs) {
-        const { sortBy: savedSort, autoRefresh: savedAutoRefresh } = JSON.parse(prefs);
+        const { sortBy: savedSort, autoRefresh: savedAutoRefresh } =
+          JSON.parse(prefs);
         if (savedSort) setSortBy(savedSort);
         if (savedAutoRefresh !== undefined) setAutoRefresh(savedAutoRefresh);
       }
@@ -151,8 +156,10 @@ export default function Admin() {
   const saveSearchHistory = useCallback((term) => {
     if (!term) return;
     try {
-      const history = JSON.parse(localStorage.getItem(SEARCH_CACHE_KEY) || '[]');
-      const updated = [term, ...history.filter(t => t !== term)].slice(0, 5);
+      const history = JSON.parse(
+        localStorage.getItem(SEARCH_CACHE_KEY) || "[]",
+      );
+      const updated = [term, ...history.filter((t) => t !== term)].slice(0, 5);
       localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(updated));
     } catch (error) {
       console.error("Error saving search history:", error);
@@ -162,7 +169,7 @@ export default function Admin() {
   // Initial load
   useEffect(() => {
     loadUserPreferences();
-    
+
     const fetchProducts = async () => {
       const cachedProducts = loadCachedData();
       if (cachedProducts && cachedProducts.length > 0) {
@@ -173,13 +180,11 @@ export default function Admin() {
 
       setLoading(true);
       try {
-        const res = await axios.get(
-          "https://api-studentalliance.nexcorealliance.com/api/products/category/Digital%20Board "
-        );
+        const res = await axios.get("/api/products/category/Digital%20Board ");
         setProducts(res.data);
         saveCachedData(res.data);
         setCacheInfo(calculateCacheStats());
-        
+
         if (!res.data || res.data.length === 0) {
           console.warn("No products found in the database.");
         }
@@ -193,12 +198,17 @@ export default function Admin() {
     };
 
     fetchProducts();
-  }, [loadCachedData, saveCachedData, calculateCacheStats, loadUserPreferences]);
+  }, [
+    loadCachedData,
+    saveCachedData,
+    calculateCacheStats,
+    loadUserPreferences,
+  ]);
 
   // Auto-refresh timer
   useEffect(() => {
     if (!autoRefresh) return;
-    
+
     const interval = setInterval(() => {
       const stats = calculateCacheStats();
       if (stats && !stats.isValid) {
@@ -232,12 +242,12 @@ export default function Admin() {
     let updatedProducts;
     if (selectedProduct) {
       updatedProducts = products.map((p) =>
-        p._id === product._id ? product : p
+        p._id === product._id ? product : p,
       );
     } else {
       updatedProducts = [...products, product];
     }
-    
+
     setProducts(updatedProducts);
     saveCachedData(updatedProducts);
     setCacheInfo(calculateCacheStats());
@@ -249,16 +259,14 @@ export default function Admin() {
     if (!silent) {
       setCacheStatus("🔄 Refreshing data...");
     }
-    
+
     try {
-      const res = await axios.get(
-        "https://api-studentalliance.nexcorealliance.com/api/products/category/Digital%20Board "
-      );
+      const res = await axios.get("/api/products/category/Digital%20Board ");
       setProducts(res.data);
       saveCachedData(res.data);
       setCacheInfo(calculateCacheStats());
       setOfflineMode(false);
-      
+
       if (!silent) {
         setCacheStatus("✓ Data refreshed successfully!");
         setTimeout(() => setCacheStatus(null), 3000);
@@ -282,7 +290,9 @@ export default function Admin() {
   };
 
   const handleClearAllData = () => {
-    if (confirm("Clear all cached data including preferences and search history?")) {
+    if (
+      confirm("Clear all cached data including preferences and search history?")
+    ) {
       localStorage.removeItem(CACHE_KEY);
       localStorage.removeItem(CACHE_METADATA_KEY);
       localStorage.removeItem(SEARCH_CACHE_KEY);
@@ -298,11 +308,13 @@ export default function Admin() {
       const data = {
         products,
         metadata: calculateCacheStats(),
-        exportDate: new Date().toISOString()
+        exportDate: new Date().toISOString(),
       };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `digital-board-cache-${Date.now()}.json`;
       a.click();
@@ -317,9 +329,10 @@ export default function Admin() {
 
   // Filter and sort products
   const filteredProducts = products
-    .filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    .filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category?.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
@@ -368,7 +381,9 @@ export default function Admin() {
               className="mb-4 p-3 bg-orange-50 border border-orange-200 text-orange-800 rounded-lg text-sm flex items-center gap-2"
             >
               <span className="text-lg">📡</span>
-              <span className="font-medium">Offline Mode - Using cached data</span>
+              <span className="font-medium">
+                Offline Mode - Using cached data
+              </span>
             </motion.div>
           )}
 
@@ -385,7 +400,7 @@ export default function Admin() {
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   Digital Board
                 </h1>
-                
+
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -397,7 +412,7 @@ export default function Admin() {
                     <span className={loading ? "animate-spin" : ""}>🔄</span>
                     {loading ? "Refreshing..." : "Refresh"}
                   </button>
-                  
+
                   <button
                     onClick={handleClearCache}
                     className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors flex items-center gap-2"
@@ -434,7 +449,9 @@ export default function Admin() {
                     onChange={(e) => handleSearch(e.target.value)}
                     className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                  <span className="absolute left-3 top-2.5 text-gray-400">
+                    🔍
+                  </span>
                 </div>
 
                 <select
@@ -455,7 +472,9 @@ export default function Admin() {
                     onChange={(e) => setAutoRefresh(e.target.checked)}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Auto-refresh</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Auto-refresh
+                  </span>
                 </label>
               </div>
 
@@ -468,26 +487,44 @@ export default function Admin() {
                 >
                   <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
                     <div>
-                      <div className="text-gray-600 font-medium">Cache Status</div>
+                      <div className="text-gray-600 font-medium">
+                        Cache Status
+                      </div>
                       <div className="text-blue-700 font-bold">
                         {cacheInfo.isValid ? "✓ Active" : "❌ Expired"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600 font-medium">Expires In</div>
-                      <div className="text-blue-700 font-bold">{cacheInfo.remainingMinutes}m</div>
+                      <div className="text-gray-600 font-medium">
+                        Expires In
+                      </div>
+                      <div className="text-blue-700 font-bold">
+                        {cacheInfo.remainingMinutes}m
+                      </div>
                     </div>
                     <div>
-                      <div className="text-gray-600 font-medium">Cache Size</div>
-                      <div className="text-blue-700 font-bold">{cacheInfo.sizeInKB} KB</div>
+                      <div className="text-gray-600 font-medium">
+                        Cache Size
+                      </div>
+                      <div className="text-blue-700 font-bold">
+                        {cacheInfo.sizeInKB} KB
+                      </div>
                     </div>
                     <div>
-                      <div className="text-gray-600 font-medium">Access Count</div>
-                      <div className="text-blue-700 font-bold">{cacheInfo.accessCount}</div>
+                      <div className="text-gray-600 font-medium">
+                        Access Count
+                      </div>
+                      <div className="text-blue-700 font-bold">
+                        {cacheInfo.accessCount}
+                      </div>
                     </div>
                     <div>
-                      <div className="text-gray-600 font-medium">Last Access</div>
-                      <div className="text-blue-700 font-bold text-xs">{cacheInfo.lastAccessed}</div>
+                      <div className="text-gray-600 font-medium">
+                        Last Access
+                      </div>
+                      <div className="text-blue-700 font-bold text-xs">
+                        {cacheInfo.lastAccessed}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -498,7 +535,9 @@ export default function Admin() {
             {loading && products.length === 0 && (
               <div className="text-center py-12">
                 <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-                <p className="mt-4 text-gray-600 font-medium">Loading digital boards...</p>
+                <p className="mt-4 text-gray-600 font-medium">
+                  Loading digital boards...
+                </p>
               </div>
             )}
 
@@ -519,7 +558,7 @@ export default function Admin() {
                   >
                     <div className="relative w-full aspect-[4/3] bg-gray-50">
                       <Image
-                        src={product.image || "/placeholder-product.jpg"}
+                        src={product.image || "/placeholder-product.svg"}
                         alt={product.name}
                         fill
                         className="object-contain p-4"
@@ -554,7 +593,9 @@ export default function Admin() {
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">📋</div>
                 <p className="text-gray-500 font-medium">
-                  {searchTerm ? "No digital boards match your search" : "No digital boards found"}
+                  {searchTerm
+                    ? "No digital boards match your search"
+                    : "No digital boards found"}
                 </p>
               </div>
             )}
@@ -563,7 +604,8 @@ export default function Admin() {
             {filteredProducts.length > 0 && !loading && (
               <div className="mt-6 flex items-center justify-between text-sm">
                 <span className="text-gray-600">
-                  Showing {filteredProducts.length} of {products.length} {products.length === 1 ? "board" : "boards"}
+                  Showing {filteredProducts.length} of {products.length}{" "}
+                  {products.length === 1 ? "board" : "boards"}
                 </span>
                 {searchTerm && (
                   <button

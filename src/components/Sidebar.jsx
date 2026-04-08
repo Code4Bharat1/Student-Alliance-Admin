@@ -6,7 +6,7 @@ import {
   AiOutlineRobot,
 } from "react-icons/ai";
 import { MdOutlineShoppingCart, MdTv } from "react-icons/md";
-import { FiPackage, FiLogOut } from "react-icons/fi";
+import { FiPackage, FiLogOut, FiUsers, FiBarChart2, FiX } from "react-icons/fi";
 import { IoIosArrowDown } from "react-icons/io";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -15,8 +15,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useDispatch } from "react-redux";
 import { logout } from "@/redux/slices/authSlice";
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onMobileClose }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
   const [activeItem, setActiveItem] = useState("");
   const [productsOpen, setProductsOpen] = useState(false);
@@ -25,16 +26,48 @@ export default function Sidebar() {
   const router = useRouter();
 
   useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const handleNavClick = () => {
+    if (isMobile && onMobileClose) onMobileClose();
+  };
+
+  useEffect(() => {
     const path = pathname.split("/")[2] || "dashboard";
     setActiveItem(path);
   }, [pathname]);
 
+  // Derived state: whether desktop collapse is active
+  const collapsed = isCollapsed && !isMobile;
+
   const menuItems = [
-    { name: "Dashboard", icon: <AiOutlineDashboard />, path: "dashboard", gradient: "from-blue-500 to-indigo-500" },
-    { name: "IFPD", icon: <MdTv />, path: "ifpd", gradient: "from-purple-500 to-pink-500" },
-    { name: "3D Printers", icon: <AiOutlineTool />, path: "3d-printers", gradient: "from-green-500 to-emerald-500" },
-    { name: "STEM & Robotics", icon: <AiOutlineRobot />, path: "stem-robotics", gradient: "from-orange-500 to-red-500" },
-    { name: "Orders", icon: <MdOutlineShoppingCart />, path: "orders", gradient: "from-cyan-500 to-blue-500" },
+    {
+      name: "Dashboard",
+      icon: <AiOutlineDashboard size={20} />,
+      path: "dashboard",
+    },
+    { name: "IFPD", icon: <MdTv size={20} />, path: "ifpd" },
+    {
+      name: "3D Printers",
+      icon: <AiOutlineTool size={20} />,
+      path: "3d-printers",
+    },
+    {
+      name: "STEM & Robotics",
+      icon: <AiOutlineRobot size={20} />,
+      path: "stem-robotics",
+    },
+    {
+      name: "Orders",
+      icon: <MdOutlineShoppingCart size={20} />,
+      path: "orders",
+    },
+    { name: "Customers", icon: <FiUsers size={20} />, path: "customers" },
+    { name: "Analytics", icon: <FiBarChart2 size={20} />, path: "analytics" },
   ];
 
   const productSubItems = [
@@ -54,8 +87,29 @@ export default function Sidebar() {
     setShowLogoutConfirm(false);
   };
 
+  const sidebarVariants = {
+    visible: isMobile
+      ? { x: 0, width: 260 }
+      : { x: 0, width: isCollapsed ? 76 : 260 },
+    hidden: { x: -260, width: 260 },
+  };
+
   return (
     <>
+      {/* Mobile backdrop */}
+      <AnimatePresence>
+        {isMobile && mobileOpen && (
+          <motion.div
+            key="mobile-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={onMobileClose}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Logout Confirmation Modal */}
       <AnimatePresence>
         {showLogoutConfirm && (
@@ -71,30 +125,31 @@ export default function Sidebar() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4"
+              className="bg-bg-card rounded-2xl p-8 max-w-md w-full mx-4"
+              style={{ boxShadow: "var(--shadow-lg)" }}
             >
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiLogOut className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 bg-error-bg rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiLogOut className="w-8 h-8 text-error" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">Logout Confirmation</h2>
-              <p className="text-gray-600 text-center mb-6">Are you sure you want to logout from your account?</p>
+              <h2 className="text-2xl font-bold text-text-heading text-center mb-2">
+                Logout
+              </h2>
+              <p className="text-text-secondary text-center mb-6">
+                Are you sure you want to logout?
+              </p>
               <div className="flex gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
                   onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl bg-bg-tertiary hover:bg-bg-hover text-text-primary font-semibold transition-colors"
                 >
                   Cancel
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                </button>
+                <button
                   onClick={handleLogout}
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg transition-all"
+                  className="flex-1 px-4 py-3 rounded-xl bg-error hover:opacity-90 text-white font-semibold transition-all"
                 >
                   Logout
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -102,268 +157,186 @@ export default function Sidebar() {
       </AnimatePresence>
 
       <motion.aside
-        className={`fixed top-0 left-0 h-full z-50 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl flex flex-col transition-all duration-300 ${
-          isCollapsed ? "w-20" : "w-64"
-        }`}
-        initial={{ width: 256 }}
-        animate={{ width: isCollapsed ? 80 : 256 }}
+        className="fixed top-0 left-0 h-full z-50 text-white flex flex-col border-r border-white/5"
+        style={{ background: "var(--bg-sidebar)" }}
+        initial={false}
+        animate={
+          isMobile
+            ? { x: mobileOpen ? 0 : -260, width: 260 }
+            : { x: 0, width: isCollapsed ? 76 : 260 }
+        }
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        {/* Header with Glow Effect */}
-        <div className="p-6 flex items-center justify-between border-b border-white/10 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10" />
-          {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 1 }}
-              animate={{ opacity: isCollapsed ? 0 : 1 }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10"
-            >
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                Admin Panel
+        {/* Header */}
+        <div className="px-5 py-5 flex items-center justify-between border-b border-white/10">
+          {!collapsed ? (
+            <div>
+              <h1 className="text-lg font-bold text-white tracking-tight">
+                Student Alliance
               </h1>
-              <p className="text-xs text-gray-400 mt-1">Management System</p>
-            </motion.div>
+              <p className="text-[11px] text-gray-400 mt-0.5">Admin Portal</p>
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-brand-primary flex items-center justify-center mx-auto">
+              <span className="text-white font-bold text-sm">SA</span>
+            </div>
           )}
-          {isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center relative z-10"
+
+          {/* Mobile: close button | Desktop: collapse toggle */}
+          {isMobile ? (
+            <button
+              onClick={onMobileClose}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
             >
-              <span className="text-white font-bold text-lg">A</span>
-            </motion.div>
+              <FiX size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d={isCollapsed ? "M6 3l5 5-5 5" : "M10 3L5 8l5 5"}
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 flex flex-col p-4 space-y-2 overflow-y-auto custom-scrollbar">
-          {menuItems.map((item, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Link
-                href={`/admin/${item.path}`}
-                onClick={() => setActiveItem(item.path)}
-              >
-                <motion.div
-                  whileHover={{ x: 5, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`flex items-center ${
-                    isCollapsed ? "justify-center" : "space-x-4"
-                  } p-3 rounded-xl transition-all duration-200 ease-in-out relative overflow-hidden group ${
-                    activeItem === item.path
-                      ? "bg-white/10 shadow-lg"
-                      : "hover:bg-white/5"
-                  }`}
-                >
-                  {activeItem === item.path && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${item.gradient} rounded-r`}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  
-                  <div className={`relative z-10 ${
-                    activeItem === item.path
-                      ? `text-2xl bg-gradient-to-br ${item.gradient} p-2 rounded-lg`
-                      : "text-2xl text-gray-400 group-hover:text-white transition-colors"
-                  }`}>
-                    {item.icon}
-                  </div>
-                  
-                  {!isCollapsed && (
-                    <motion.span
-                      className={`text-sm font-medium relative z-10 ${
-                        activeItem === item.path
-                          ? "text-white"
-                          : "text-gray-300 group-hover:text-white"
-                      }`}
-                      initial={{ opacity: 1 }}
-                      animate={{ opacity: isCollapsed ? 0 : 1 }}
-                      transition={{ duration: 0.1 }}
-                    >
-                      {item.name}
-                    </motion.span>
-                  )}
-                </motion.div>
-              </Link>
-            </motion.div>
-          ))}
-
-          {/* Products Dropdown with Enhanced Design */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: menuItems.length * 0.05 }}
-            className="relative"
+        <nav className="flex-1 flex flex-col px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+          <p
+            className={`text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2 ${collapsed ? "text-center" : "px-3"}`}
           >
-            <motion.button
-              whileHover={{ x: 5, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setProductsOpen(!productsOpen)}
-              className={`w-full flex items-center ${
-                isCollapsed ? "justify-center" : "justify-between"
-              } p-3 rounded-xl transition-all duration-200 ease-in-out relative overflow-hidden group ${
-                pathname.includes("products") || productsOpen
-                  ? "bg-white/10 shadow-lg"
-                  : "hover:bg-white/5"
-              }`}
+            {collapsed ? "•" : "Menu"}
+          </p>
+
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              href={`/admin/${item.path}`}
+              onClick={() => {
+                setActiveItem(item.path);
+                handleNavClick();
+              }}
             >
-              {(pathname.includes("products") || productsOpen) && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-r"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
-              
-              <div className="flex items-center space-x-4">
-                <div className={`relative z-10 ${
-                  pathname.includes("products") || productsOpen
-                    ? "text-2xl bg-gradient-to-br from-indigo-500 to-purple-500 p-2 rounded-lg"
-                    : "text-2xl text-gray-400 group-hover:text-white transition-colors"
-                }`}>
-                  <FiPackage />
-                </div>
-                
-                {!isCollapsed && (
-                  <span className={`text-sm font-medium ${
-                    pathname.includes("products") || productsOpen
-                      ? "text-white"
-                      : "text-gray-300 group-hover:text-white"
-                  }`}>
-                    Products
-                  </span>
+              <div
+                className={`flex items-center ${
+                  collapsed ? "justify-center" : "gap-3"
+                } px-3 py-2.5 rounded-lg transition-all duration-150 relative group ${
+                  activeItem === item.path
+                    ? "bg-brand-primary text-white shadow-md"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <span className={activeItem === item.path ? "text-white" : ""}>
+                  {item.icon}
+                </span>
+                {!collapsed && (
+                  <span className="text-sm font-medium">{item.name}</span>
+                )}
+                {collapsed && (
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50">
+                    {item.name}
+                  </div>
                 )}
               </div>
-              
-              {!isCollapsed && (
+            </Link>
+          ))}
+
+          {/* Products Dropdown */}
+          <div>
+            <button
+              onClick={() => setProductsOpen(!productsOpen)}
+              className={`w-full flex items-center ${
+                collapsed ? "justify-center" : "justify-between"
+              } px-3 py-2.5 rounded-lg transition-all duration-150 group ${
+                productsOpen
+                  ? "bg-white/10 text-white"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <div className={`flex items-center ${collapsed ? "" : "gap-3"}`}>
+                <FiPackage size={20} />
+                {!collapsed && (
+                  <span className="text-sm font-medium">Products</span>
+                )}
+              </div>
+              {!collapsed && (
                 <motion.span
-                  className="ml-2 text-gray-400"
                   animate={{ rotate: productsOpen ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <IoIosArrowDown size={16} />
+                  <IoIosArrowDown size={14} />
                 </motion.span>
               )}
-            </motion.button>
+            </button>
 
-            <AnimatePresence initial={false}>
-              {!isCollapsed && productsOpen && (
+            <AnimatePresence>
+              {!collapsed && productsOpen && (
                 <motion.div
-                  className="mt-2 ml-4 space-y-1 overflow-hidden"
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
                 >
-                  <div className="pl-8 border-l-2 border-white/10 space-y-1 max-h-56 overflow-y-auto custom-scrollbar">
-                    {productSubItems.map((subItem, idx) => (
+                  <div className="ml-5 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                    {productSubItems.map((subItem) => (
                       <Link
-                        key={idx}
+                        key={subItem.path}
                         href={`/admin/${subItem.path}`}
-                        onClick={() => setActiveItem(subItem.path)}
+                        onClick={() => {
+                          setActiveItem(subItem.path);
+                          handleNavClick();
+                        }}
                       >
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.03 }}
-                          whileHover={{ x: 3 }}
+                        <div
                           className={`text-sm px-3 py-2 rounded-lg transition-all ${
-                            pathname.includes(subItem.path)
-                              ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 font-medium"
+                            activeItem === subItem.path
+                              ? "bg-brand-primary/20 text-blue-300 font-medium"
                               : "text-gray-400 hover:text-white hover:bg-white/5"
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${
-                              pathname.includes(subItem.path)
-                                ? "bg-indigo-400"
-                                : "bg-gray-600"
-                            }`} />
-                            {subItem.name}
-                          </div>
-                        </motion.div>
+                          {subItem.name}
+                        </div>
                       </Link>
                     ))}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </nav>
 
-        {/* Enhanced Footer */}
-        <div className="p-4 border-t border-white/10 bg-gradient-to-b from-transparent to-black/20">
-          <motion.button
-            whileHover={{ scale: 1.03, x: 5 }}
-            whileTap={{ scale: 0.97 }}
+        {/* Footer */}
+        <div className="px-3 py-4 border-t border-white/10">
+          <button
             onClick={() => setShowLogoutConfirm(true)}
             className={`w-full flex items-center ${
-              isCollapsed ? "justify-center" : "space-x-4"
-            } p-3 rounded-xl transition-all duration-200 relative overflow-hidden group bg-red-500/10 hover:bg-red-500/20 border border-red-500/20`}
+              collapsed ? "justify-center" : "gap-3"
+            } px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all`}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/10 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-            
-            <div className="relative z-10 text-2xl bg-gradient-to-br from-red-400 to-red-600 p-2 rounded-lg">
-              <FiLogOut />
-            </div>
-            
-            {!isCollapsed && (
-              <motion.span
-                className="text-sm font-medium text-red-400 relative z-10"
-                initial={{ opacity: 1 }}
-                animate={{ opacity: isCollapsed ? 0 : 1 }}
-                transition={{ duration: 0.1 }}
-              >
-                Logout
-              </motion.span>
-            )}
-          </motion.button>
-
-          {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mt-4 pt-4 border-t border-white/10"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">SA</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white"> Admin</p>
-                  <p className="text-xs text-gray-400">Siddiquiraheem527@gmail.com</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
+            <FiLogOut size={20} />
+            {!collapsed && <span className="text-sm font-medium">Logout</span>}
+          </button>
         </div>
 
-        {/* Enhanced Scrollbar Style */}
         <style jsx>{`
           .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
           }
-
           .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.5), rgba(99, 102, 241, 0.5));
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
           }
-
           .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
-          }
-
-          .custom-scrollbar {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
           }
         `}</style>
       </motion.aside>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 // Mock router for demo
 const useRouter = () => ({
-  push: (path) => console.log("Navigate to:", path)
+  push: (path) => console.log("Navigate to:", path),
 });
 
 export default function Admin() {
@@ -24,9 +24,7 @@ export default function Admin() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          "https://api-studentalliance.nexcorealliance.com/api/products/category/IFPD"
-        );
+        const res = await fetch("/api/products/category/IFPD");
         const data = await res.json();
         setProducts(data);
         if (!data || data.length === 0) {
@@ -56,7 +54,7 @@ export default function Admin() {
   const saveProduct = (product) => {
     if (selectedProduct) {
       const updatedProducts = products.map((p) =>
-        p._id === product._id ? product : p
+        p._id === product._id ? product : p,
       );
       setProducts(updatedProducts);
       showNotification("Product updated successfully", "success");
@@ -70,14 +68,19 @@ export default function Admin() {
   // Filter and sort products
   const filteredProducts = products
     .filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.category?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesPrice = filterPrice === "all" ? true :
-        filterPrice === "low" ? product.price < 50000 :
-        filterPrice === "mid" ? product.price >= 50000 && product.price <= 100000 :
-        product.price > 100000;
-      
+
+      const matchesPrice =
+        filterPrice === "all"
+          ? true
+          : filterPrice === "low"
+            ? product.price < 50000
+            : filterPrice === "mid"
+              ? product.price >= 50000 && product.price <= 100000
+              : product.price > 100000;
+
       return matchesSearch && matchesPrice;
     })
     .sort((a, b) => {
@@ -90,9 +93,9 @@ export default function Admin() {
 
   const stats = {
     total: products.length,
-    inStock: products.filter(p => p.quantity > 0).length,
-    totalValue: products.reduce((sum, p) => sum + (p.price * p.quantity), 0),
-    lowStock: products.filter(p => p.quantity < 5).length
+    inStock: products.filter((p) => p.quantity > 0).length,
+    totalValue: products.reduce((sum, p) => sum + p.price * p.quantity, 0),
+    lowStock: products.filter((p) => p.quantity < 5).length,
   };
 
   return (
@@ -112,12 +115,32 @@ export default function Admin() {
           >
             <div className="flex items-center gap-3">
               {notification.type === "success" ? (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               ) : (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               )}
               <span className="font-semibold">{notification.message}</span>
@@ -150,8 +173,18 @@ export default function Admin() {
                 onClick={handleAddProduct}
                 className="px-6 py-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2 self-start lg:self-auto"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 Add New Panel
               </motion.button>
@@ -165,21 +198,47 @@ export default function Admin() {
               className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
             >
               {[
-                { label: "Total Panels", value: stats.total, color: "from-blue-500 to-indigo-500", icon: "📱" },
-                { label: "In Stock", value: stats.inStock, color: "from-green-500 to-emerald-500", icon: "✅" },
-                { label: "Total Value", value: `₹${(stats.totalValue / 100000).toFixed(1)}L`, color: "from-purple-500 to-pink-500", icon: "💎" },
-                { label: "Low Stock", value: stats.lowStock, color: "from-orange-500 to-red-500", icon: "⚠️" }
+                {
+                  label: "Total Panels",
+                  value: stats.total,
+                  color: "from-blue-500 to-indigo-500",
+                  icon: "📱",
+                },
+                {
+                  label: "In Stock",
+                  value: stats.inStock,
+                  color: "from-green-500 to-emerald-500",
+                  icon: "✅",
+                },
+                {
+                  label: "Total Value",
+                  value: `₹${(stats.totalValue / 100000).toFixed(1)}L`,
+                  color: "from-purple-500 to-pink-500",
+                  icon: "💎",
+                },
+                {
+                  label: "Low Stock",
+                  value: stats.lowStock,
+                  color: "from-orange-500 to-red-500",
+                  icon: "⚠️",
+                },
               ].map((stat, idx) => (
                 <motion.div
                   key={idx}
                   whileHover={{ y: -4, scale: 1.02 }}
                   className="bg-white/80 backdrop-blur rounded-xl p-5 shadow-lg border border-gray-100"
                 >
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${stat.color} mb-3 flex items-center justify-center text-xl`}>
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${stat.color} mb-3 flex items-center justify-center text-xl`}
+                  >
                     {stat.icon}
                   </div>
-                  <p className="text-gray-600 text-sm font-medium">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-800 mt-1">{stat.value}</p>
+                  <p className="text-gray-600 text-sm font-medium">
+                    {stat.label}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-800 mt-1">
+                    {stat.value}
+                  </p>
                 </motion.div>
               ))}
             </motion.div>
@@ -207,7 +266,12 @@ export default function Admin() {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
                 </div>
 
@@ -246,8 +310,18 @@ export default function Admin() {
                     }`}
                     title="Grid View"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                      />
                     </svg>
                   </button>
                   <button
@@ -259,8 +333,18 @@ export default function Admin() {
                     }`}
                     title="List View"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h16"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -273,17 +357,33 @@ export default function Admin() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-600 font-medium">Loading IFPD Panels...</p>
+                <p className="text-gray-600 font-medium">
+                  Loading IFPD Panels...
+                </p>
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  <svg
+                    className="w-10 h-10 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                    />
                   </svg>
                 </div>
-                <p className="text-gray-600 font-medium text-lg">No panels found</p>
-                <p className="text-gray-400 text-sm">Try adjusting your search or filters</p>
+                <p className="text-gray-600 font-medium text-lg">
+                  No panels found
+                </p>
+                <p className="text-gray-400 text-sm">
+                  Try adjusting your search or filters
+                </p>
               </div>
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
@@ -295,18 +395,24 @@ export default function Admin() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
                     whileHover={{ y: -8, scale: 1.02 }}
-                    onClick={() => router.push(`/admin/ProductDetails/${product._id}`)}
+                    onClick={() =>
+                      router.push(`/admin/ProductDetails/${product._id}`)
+                    }
                   >
                     {/* Stock Badge */}
                     <div className="absolute top-3 right-3 z-10">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                        product.quantity === 0
-                          ? "bg-red-500 text-white"
-                          : product.quantity < 5
-                          ? "bg-orange-500 text-white"
-                          : "bg-green-500 text-white"
-                      }`}>
-                        {product.quantity === 0 ? "Out of Stock" : `${product.quantity} in stock`}
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                          product.quantity === 0
+                            ? "bg-red-500 text-white"
+                            : product.quantity < 5
+                              ? "bg-orange-500 text-white"
+                              : "bg-green-500 text-white"
+                        }`}
+                      >
+                        {product.quantity === 0
+                          ? "Out of Stock"
+                          : `${product.quantity} in stock`}
                       </span>
                     </div>
 
@@ -315,7 +421,9 @@ export default function Admin() {
                         src={product.image}
                         alt={product.name}
                         className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
-                        onError={(e) => { e.target.src = "/placeholder-product.jpg"; }}
+                        onError={(e) => {
+                          e.target.src = "/placeholder-product.svg";
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
@@ -324,15 +432,17 @@ export default function Admin() {
                       <h3 className="font-bold text-lg text-gray-800 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
                         {product.name}
                       </h3>
-                      <p className="text-gray-500 text-sm mb-3">{product.category}</p>
-                      
+                      <p className="text-gray-500 text-sm mb-3">
+                        {product.category}
+                      </p>
+
                       <div className="mt-auto">
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                             ₹{product.price?.toLocaleString()}
                           </span>
                         </div>
-                        
+
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -358,22 +468,28 @@ export default function Admin() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    onClick={() => router.push(`/admin/ProductDetails/${product._id}`)}
+                    onClick={() =>
+                      router.push(`/admin/ProductDetails/${product._id}`)
+                    }
                   >
                     <div className="relative w-24 h-24 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex-shrink-0">
                       <img
                         src={product.image}
                         alt={product.name}
                         className="w-full h-full object-contain p-2"
-                        onError={(e) => { e.target.src = "/placeholder-product.jpg"; }}
+                        onError={(e) => {
+                          e.target.src = "/placeholder-product.svg";
+                        }}
                       />
                     </div>
-                    
+
                     <div className="flex-grow">
                       <h3 className="font-bold text-lg text-gray-800 mb-1">
                         {product.name}
                       </h3>
-                      <p className="text-gray-500 text-sm">{product.category}</p>
+                      <p className="text-gray-500 text-sm">
+                        {product.category}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-6">
@@ -386,13 +502,15 @@ export default function Admin() {
 
                       <div className="text-right">
                         <p className="text-sm text-gray-500 mb-1">Stock</p>
-                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                          product.quantity === 0
-                            ? "bg-red-100 text-red-700"
-                            : product.quantity < 5
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-green-100 text-green-700"
-                        }`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-bold ${
+                            product.quantity === 0
+                              ? "bg-red-100 text-red-700"
+                              : product.quantity < 5
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-green-100 text-green-700"
+                          }`}
+                        >
                           {product.quantity} units
                         </span>
                       </div>
@@ -406,8 +524,18 @@ export default function Admin() {
                           router.push(`/admin/ProductDetails/${product._id}`);
                         }}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       </motion.button>
                     </div>

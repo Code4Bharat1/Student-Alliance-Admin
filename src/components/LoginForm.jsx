@@ -1,25 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+import { useTheme } from "./ThemeProvider";
+import { FiSun, FiMoon, FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 
 export default function LoginForm({ setIsLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
-
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,270 +22,151 @@ export default function LoginForm({ setIsLogin }) {
     setLoading(true);
     try {
       const res = await axios.post(
-        "https://api-studentalliance.nexcorealliance.com/api/auth/login",
-        { email, password }
+        "/api/auth/login",
+        { email, password },
       );
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       toast.success("Login successful!");
       router.push("/admin/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      setError(
+        err.response?.data?.message || "Login failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 px-4">
-      <AnimatePresence>
-        {isMounted && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
-            className="w-full max-w-md"
-          >
-            <div className="bg-white backdrop-blur-sm bg-opacity-95 rounded-2xl shadow-2xl p-10 border border-gray-200">
-              <motion.div
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="flex justify-center mb-6"
-              >
-                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-xl">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-10 w-10 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                </div>
-              </motion.div>
+    <div className="min-h-screen flex items-center justify-center bg-bg-primary px-4 relative">
+      {/* Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 p-2.5 rounded-xl bg-bg-card border border-border-primary text-text-secondary hover:text-text-primary transition-all"
+        style={{ boxShadow: "var(--shadow-sm)" }}
+      >
+        {theme === "light" ? <FiMoon size={18} /> : <FiSun size={18} />}
+      </button>
 
-              <h2 className="text-3xl font-extrabold text-gray-800 mb-2 text-center">
-                Welcome Back
-              </h2>
-              <p className="text-gray-500 text-center mb-6">
-                Login to your account
-              </p>
-
-              {error && (
-                <div className="text-red-500 text-center mb-4 font-medium">{error}</div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                {/* Email Input */}
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="mb-5"
-                >
-                  <label
-                    htmlFor="email"
-                    className="block text-gray-700 text-sm font-semibold mb-2"
-                  >
-                    Email
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-12 shadow-sm"
-                      placeholder="your@email.com"
-                      required
-                    />
-                    <div className="absolute left-3 top-3 text-gray-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                      </svg>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Password Input */}
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="mb-5"
-                >
-                  <label
-                    htmlFor="password"
-                    className="block text-gray-700 text-sm font-semibold mb-2"
-                  >
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pl-12 pr-12 shadow-sm"
-                      placeholder="••••••••"
-                      required
-                      minLength="6"
-                    />
-                    <div className="absolute left-3 top-3 text-gray-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <button
-                      type="button"
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
-                      onClick={togglePasswordVisibility}
-                    >
-                      <AnimatePresence mode="wait" initial={false}>
-                        <motion.div
-                          key={showPassword ? "open" : "closed"}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {showPassword ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                              <path
-                                fillRule="evenodd"
-                                d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
-                                clipRule="evenodd"
-                              />
-                              <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
-                            </svg>
-                          )}
-                        </motion.div>
-                      </AnimatePresence>
-                    </button>
-                  </div>
-                </motion.div>
-
-                {/* Remember & Forgot */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center justify-between mb-6"
-                >
-                  <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      type="checkbox"
-                      className="h-4 w-4 rounded bg-gray-50 border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor="remember-me"
-                      className="ml-2 block text-sm text-gray-700 font-medium"
-                    >
-                      Remember me
-                    </label>
-                  </div>
-                  <a
-                    href="/forget"
-                    className="text-sm text-blue-600 font-medium hover:underline hover:text-blue-700 transition-colors"
-                  >
-                    Forgot password?
-                  </a>
-                </motion.div>
-
-                {/* Submit Button */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <button
-                    type="submit"
-                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center"
-                    disabled={loading}
-                  >
-                    <span>{loading ? "Logging in..." : "Login"}</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 ml-2"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </motion.div>
-              </form>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                className="mt-6 text-center"
-              >
-                <p className="text-gray-600">
-                  Don't have an account?{" "}
-                  <button
-                    onClick={() => setIsLogin(false)}
-                    className="text-blue-600 font-medium hover:underline hover:text-blue-700 transition-colors"
-                  >
-                    Sign up
-                  </button>
-                </p>
-              </motion.div>
+      <div className="w-full max-w-md">
+        <div
+          className="bg-bg-card rounded-2xl p-8 border border-border-primary"
+          style={{ boxShadow: "var(--shadow-lg)" }}
+        >
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center">
+              <FiLock className="text-white" size={28} />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <Toaster />
+          </div>
+
+          <h2 className="text-2xl font-bold text-text-heading text-center mb-1">
+            Welcome Back
+          </h2>
+          <p className="text-text-tertiary text-center text-sm mb-6">
+            Sign in to your admin account
+          </p>
+
+          {error && (
+            <div className="bg-error-bg text-error text-sm text-center p-3 rounded-xl mb-4 border border-error/20">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-text-secondary mb-1.5"
+              >
+                Email
+              </label>
+              <div className="relative">
+                <FiMail
+                  className="absolute left-3.5 top-3 text-text-tertiary"
+                  size={16}
+                />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg-input border border-border-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-border-focus text-text-primary placeholder-text-tertiary text-sm"
+                  placeholder="admin@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-text-secondary mb-1.5"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <FiLock
+                  className="absolute left-3.5 top-3 text-text-tertiary"
+                  size={16}
+                />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-bg-input border border-border-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-border-focus text-text-primary placeholder-text-tertiary text-sm"
+                  placeholder="••••••••"
+                  required
+                  minLength="6"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-text-tertiary hover:text-text-secondary"
+                >
+                  {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-6">
+              <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-border-primary text-brand-primary focus:ring-brand-primary"
+                />
+                Remember me
+              </label>
+              <a
+                href="/forget"
+                className="text-sm text-brand-primary hover:underline font-medium"
+              >
+                Forgot password?
+              </a>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-hover text-white font-medium rounded-xl transition-all text-sm disabled:opacity-60"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-sm text-text-secondary">
+            Don&apos;t have an account?{" "}
+            <button
+              onClick={() => setIsLogin(false)}
+              className="text-brand-primary font-medium hover:underline"
+            >
+              Sign up
+            </button>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

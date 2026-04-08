@@ -78,10 +78,15 @@ export default function Modal({ product, onClose, onSave }) {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
-        method: "POST",
-        body: formDataUpload,
-      });
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `/api/upload`,
+        {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formDataUpload,
+        },
+      );
 
       const data = await res.json();
 
@@ -116,7 +121,10 @@ export default function Modal({ product, onClose, onSave }) {
   };
 
   const addFeature = () => {
-    if (currentFeature.trim() && !formData.features.includes(currentFeature.trim())) {
+    if (
+      currentFeature.trim() &&
+      !formData.features.includes(currentFeature.trim())
+    ) {
       setFormData((prev) => ({
         ...prev,
         features: [...prev.features, currentFeature.trim()],
@@ -146,10 +154,11 @@ export default function Modal({ product, onClose, onSave }) {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name?.trim()) newErrors.name = "Product name is required";
-    if (!formData.price || formData.price <= 0) newErrors.price = "Valid price is required";
+    if (!formData.price || formData.price <= 0)
+      newErrors.price = "Valid price is required";
     if (!formData.category) newErrors.category = "Category is required";
     if (!formData.image) newErrors.image = "Main image is required";
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -175,8 +184,8 @@ export default function Modal({ product, onClose, onSave }) {
     setSaving(true);
     try {
       const url = product
-        ? `https://api-studentalliance.nexcorealliance.com/api/products/${product._id}`
-        : "https://api-studentalliance.nexcorealliance.com/api/products";
+        ? `/api/products/${product._id}`
+        : "/api/products";
 
       const method = product ? "PUT" : "POST";
 
@@ -184,6 +193,7 @@ export default function Modal({ product, onClose, onSave }) {
         method,
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(payload),
       });
@@ -214,7 +224,8 @@ export default function Modal({ product, onClose, onSave }) {
       onClick={onClose}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-bg-card rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-border-primary"
+        style={{ boxShadow: "var(--shadow-lg)" }}
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
@@ -222,22 +233,37 @@ export default function Modal({ product, onClose, onSave }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+        <div
+          className="p-6 text-white"
+          style={{ background: "var(--brand-gradient)" }}
+        >
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-2xl font-bold mb-1">
                 {product ? "Edit Product" : "Add New Product"}
               </h3>
               <p className="text-blue-100 text-sm">
-                {product ? "Update your product details" : "Fill in the details to add a new product"}
+                {product
+                  ? "Update your product details"
+                  : "Fill in the details to add a new product"}
               </p>
             </div>
             <button
               onClick={onClose}
               className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -247,16 +273,18 @@ export default function Modal({ product, onClose, onSave }) {
         <div className="overflow-y-auto p-6 space-y-6">
           {/* Basic Info Section */}
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-sm font-bold">1</span>
+            <h4 className="text-lg font-semibold text-text-heading flex items-center gap-2">
+              <span className="w-8 h-8 bg-brand-primary/10 text-brand-primary rounded-lg flex items-center justify-center text-sm font-bold">
+                1
+              </span>
               Basic Information
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Product Name */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Product Name <span className="text-red-500">*</span>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Product Name <span className="text-error">*</span>
                 </label>
                 <input
                   type="text"
@@ -264,40 +292,46 @@ export default function Modal({ product, onClose, onSave }) {
                   placeholder="e.g., Professional DSLR Camera"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full border-2 ${errors.name ? 'border-red-500' : 'border-gray-200'} focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none`}
+                  className={`w-full border ${errors.name ? "border-error" : "border-border-primary"} focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none bg-bg-input text-text-primary`}
                 />
-                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                )}
               </div>
 
               {/* Price */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Price (₹) <span className="text-red-500">*</span>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Price (₹) <span className="text-error">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-500 font-semibold">₹</span>
+                  <span className="absolute left-3 top-3 text-text-tertiary font-semibold">
+                    ₹
+                  </span>
                   <input
                     type="number"
                     name="price"
                     placeholder="0.00"
                     value={formData.price}
                     onChange={handleChange}
-                    className={`w-full border-2 ${errors.price ? 'border-red-500' : 'border-gray-200'} focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 pl-8 transition-all outline-none`}
+                    className={`w-full border ${errors.price ? "border-error" : "border-border-primary"} focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 pl-8 transition-all outline-none bg-bg-input text-text-primary`}
                   />
                 </div>
-                {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
+                {errors.price && (
+                  <p className="text-red-500 text-xs mt-1">{errors.price}</p>
+                )}
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Category <span className="text-red-500">*</span>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Category <span className="text-error">*</span>
                 </label>
                 <select
                   name="category"
                   value={formData.category || ""}
                   onChange={handleChange}
-                  className={`w-full border-2 ${errors.category ? 'border-red-500' : 'border-gray-200'} focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none`}
+                  className={`w-full border ${errors.category ? "border-error" : "border-border-primary"} focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none bg-bg-input text-text-primary`}
                 >
                   <option value="">Select a category</option>
                   {categories.map((cat) => (
@@ -306,13 +340,15 @@ export default function Modal({ product, onClose, onSave }) {
                     </option>
                   ))}
                 </select>
-                {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
+                {errors.category && (
+                  <p className="text-red-500 text-xs mt-1">{errors.category}</p>
+                )}
               </div>
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-text-secondary mb-2">
                 Product Description
               </label>
               <textarea
@@ -321,21 +357,25 @@ export default function Modal({ product, onClose, onSave }) {
                 value={formData.description}
                 onChange={handleChange}
                 rows={4}
-                className="w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none resize-none"
+                className="w-full border border-border-primary focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none resize-none bg-bg-input text-text-primary"
               />
             </div>
           </div>
 
           {/* Inventory Section */}
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <span className="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-sm font-bold">2</span>
+            <h4 className="text-lg font-semibold text-text-heading flex items-center gap-2">
+              <span className="w-8 h-8 bg-brand-secondary/10 text-brand-secondary rounded-lg flex items-center justify-center text-sm font-bold">
+                2
+              </span>
               Inventory & Pricing
             </h4>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Quantity</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Quantity
+                </label>
                 <input
                   type="number"
                   name="quantity"
@@ -343,12 +383,14 @@ export default function Modal({ product, onClose, onSave }) {
                   placeholder="0"
                   value={formData.quantity}
                   onChange={handleChange}
-                  className="w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none"
+                  className="w-full border border-border-primary focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none bg-bg-input text-text-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Stocks</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Stocks
+                </label>
                 <input
                   type="number"
                   name="stocks"
@@ -356,12 +398,14 @@ export default function Modal({ product, onClose, onSave }) {
                   placeholder="0"
                   value={formData.stocks}
                   onChange={handleChange}
-                  className="w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none"
+                  className="w-full border border-border-primary focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none bg-bg-input text-text-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Discount (%)</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Discount (%)
+                </label>
                 <input
                   type="number"
                   name="discount"
@@ -370,12 +414,14 @@ export default function Modal({ product, onClose, onSave }) {
                   placeholder="0"
                   value={formData.discount}
                   onChange={handleChange}
-                  className="w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none"
+                  className="w-full border border-border-primary focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none bg-bg-input text-text-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Rating</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Rating
+                </label>
                 <input
                   type="number"
                   name="rating"
@@ -385,7 +431,7 @@ export default function Modal({ product, onClose, onSave }) {
                   placeholder="0.0"
                   value={formData.rating}
                   onChange={handleChange}
-                  className="w-full border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none"
+                  className="w-full border border-border-primary focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none bg-bg-input text-text-primary"
                 />
               </div>
             </div>
@@ -393,8 +439,10 @@ export default function Modal({ product, onClose, onSave }) {
 
           {/* Features Section */}
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <span className="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-sm font-bold">3</span>
+            <h4 className="text-lg font-semibold text-text-heading flex items-center gap-2">
+              <span className="w-8 h-8 bg-success/10 text-success rounded-lg flex items-center justify-center text-sm font-bold">
+                3
+              </span>
               Product Features
             </h4>
 
@@ -403,9 +451,9 @@ export default function Modal({ product, onClose, onSave }) {
                 type="text"
                 value={currentFeature}
                 onChange={(e) => setCurrentFeature(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addFeature()}
+                onKeyPress={(e) => e.key === "Enter" && addFeature()}
                 placeholder="Add a feature (press Enter)"
-                className="flex-1 border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl p-3 transition-all outline-none"
+                className="flex-1 border border-border-primary focus:border-border-focus focus:ring-2 focus:ring-brand-primary/20 rounded-xl p-3 transition-all outline-none bg-bg-input text-text-primary"
               />
               <button
                 type="button"
@@ -424,7 +472,7 @@ export default function Modal({ product, onClose, onSave }) {
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-2 rounded-full text-sm font-medium text-blue-700"
+                    className="flex items-center gap-2 bg-bg-badge border border-border-primary px-4 py-2 rounded-full text-sm font-medium text-brand-primary"
                   >
                     <span>{feature}</span>
                     <button
@@ -442,22 +490,24 @@ export default function Modal({ product, onClose, onSave }) {
 
           {/* Images Section */}
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <span className="w-8 h-8 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center text-sm font-bold">4</span>
+            <h4 className="text-lg font-semibold text-text-heading flex items-center gap-2">
+              <span className="w-8 h-8 bg-warning/10 text-warning rounded-lg flex items-center justify-center text-sm font-bold">
+                4
+              </span>
               Product Images
             </h4>
 
             {/* Main Image */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Main Image <span className="text-red-500">*</span>
+              <label className="block text-sm font-semibold text-text-secondary mb-2">
+                Main Image <span className="text-error">*</span>
               </label>
               <div
                 onDragEnter={(e) => handleDrag(e, true)}
                 onDragLeave={(e) => handleDrag(e, false)}
                 onDragOver={(e) => handleDrag(e, true)}
                 onDrop={(e) => handleDrop(e)}
-                className={`relative border-2 border-dashed ${dragActive ? 'border-blue-500 bg-blue-50' : errors.image ? 'border-red-500' : 'border-gray-300'} rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer group`}
+                className={`relative border-2 border-dashed ${dragActive ? "border-brand-primary bg-info-bg" : errors.image ? "border-error" : "border-border-secondary"} rounded-xl p-8 text-center hover:border-brand-primary hover:bg-info-bg/50 transition-all cursor-pointer group`}
               >
                 <input
                   type="file"
@@ -477,23 +527,41 @@ export default function Modal({ product, onClose, onSave }) {
                       alt="Main product"
                       className="h-32 w-32 rounded-lg object-cover shadow-lg"
                     />
-                    <p className="text-sm text-gray-500">Click or drag to change</p>
+                    <p className="text-sm text-gray-500">
+                      Click or drag to change
+                    </p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      <svg
+                        className="w-8 h-8 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-blue-600 font-semibold">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
+                      <p className="text-blue-600 font-semibold">
+                        Click to upload or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PNG, JPG up to 10MB
+                      </p>
                     </div>
                   </div>
                 )}
               </div>
-              {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
+              {errors.image && (
+                <p className="text-red-500 text-xs mt-1">{errors.image}</p>
+              )}
             </div>
 
             {/* Additional Images */}
@@ -537,8 +605,18 @@ export default function Modal({ product, onClose, onSave }) {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2 h-24 justify-center">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        <svg
+                          className="w-8 h-8 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
                         </svg>
                         <p className="text-xs text-gray-500">Add Image</p>
                       </div>
@@ -551,15 +629,15 @@ export default function Modal({ product, onClose, onSave }) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-6 bg-gray-50">
+        <div className="border-t border-border-primary p-6 bg-bg-hover">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-500">
-              <span className="text-red-500">*</span> Required fields
+            <p className="text-sm text-text-tertiary">
+              <span className="text-error">*</span> Required fields
             </p>
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-semibold"
+                className="flex-1 sm:flex-none px-6 py-3 border border-border-primary text-text-secondary rounded-xl hover:bg-bg-tertiary transition-all font-semibold bg-bg-card"
               >
                 Cancel
               </button>

@@ -1,16 +1,14 @@
-'use client';
-import Header from '@/components/Header';
-import Sidebar from '@/components/Sidebar';
-import Modal from '@/components/Modal';
-import React, { useState } from 'react';
+"use client";
+import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import Modal from "@/components/Modal";
+import React, { useState } from "react";
 
 const AdminLayout = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
-
-  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleAddProduct = () => {
     setIsModalOpen(true);
@@ -25,7 +23,7 @@ const AdminLayout = ({ children }) => {
   const saveProduct = (product) => {
     if (selectedProduct) {
       const updatedProducts = products.map((p) =>
-        p.id === product.id ? product : p
+        p.id === product.id ? product : p,
       );
       setProducts(updatedProducts);
     } else {
@@ -41,29 +39,36 @@ const AdminLayout = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen">
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <Header onAddProduct={handleAddProduct} />
-        {/* Inject children into the layout correctly */}
-        {React.Children.map(children, (child) =>
-          React.isValidElement(child)
-            ? React.cloneElement(child, {
-                products,
-                setProducts,
-                onEditProduct: handleEditProduct,
-                onDeleteProduct: handleDeleteProduct,
-              })
-            : child
-        )}
-        {isModalOpen && (
-          <Modal
-            product={selectedProduct}
-            onClose={() => setIsModalOpen(false)}
-            onSave={saveProduct}
-          />
-        )}
-      </main>
+    <div className="flex h-screen bg-bg-primary">
+      <Sidebar
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
+      <div className="flex-1 ml-0 lg:ml-[260px] flex flex-col min-h-screen">
+        <Header
+          onAddProduct={handleAddProduct}
+          onMenuToggle={() => setMobileSidebarOpen((p) => !p)}
+        />
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          {React.Children.map(children, (child) =>
+            React.isValidElement(child)
+              ? React.cloneElement(child, {
+                  products,
+                  setProducts,
+                  onEditProduct: handleEditProduct,
+                  onDeleteProduct: handleDeleteProduct,
+                })
+              : child,
+          )}
+        </main>
+      </div>
+      {isModalOpen && (
+        <Modal
+          product={selectedProduct}
+          onClose={() => setIsModalOpen(false)}
+          onSave={saveProduct}
+        />
+      )}
     </div>
   );
 };

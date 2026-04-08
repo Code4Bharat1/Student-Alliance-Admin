@@ -3,13 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import Modal from "@/components/Modal";
-import ProductTable from "@/components/ProductTable";
-import { PencilIcon } from "@heroicons/react/24/outline";
+import { ProductTable } from "@/components/ProductTable";
 
-export default function AdminDashboard(props) {
-  const { products, onEditProduct, onDeleteProduct, isLoading } = props;
+export default function AdminDashboard() {
   const router = useRouter();
   const { isAuthenticated, token } = useSelector((state) => state.auth);
   const [modalOpen, setModalOpen] = useState(false);
@@ -23,31 +20,23 @@ export default function AdminDashboard(props) {
     }
   }, [isAuthenticated, token, router]);
 
-  // Edit handler: open modal with product
   const handleEditProduct = (product) => {
     setSelectedProduct(product);
     setModalOpen(true);
   };
 
-  // Save handler: close modal and refresh table
   const handleSaveProduct = () => {
     setModalOpen(false);
     setSelectedProduct(null);
-    // Optionally: trigger a refresh, or rely on the ProductTable's event listener
+    window.dispatchEvent(new Event("productAdded"));
   };
 
   return (
     <div>
-      <ProductTable
-        products={products}
-        onEdit={handleEditProduct}
-        onDelete={onDeleteProduct}
-        isLoading={isLoading}
-      />
+      <ProductTable onEdit={handleEditProduct} />
       {modalOpen && (
         <Modal
           product={selectedProduct}
-          onClick = {() =>onEdit(product)}
           onClose={() => setModalOpen(false)}
           onSave={handleSaveProduct}
         />
@@ -55,4 +44,3 @@ export default function AdminDashboard(props) {
     </div>
   );
 }
-
