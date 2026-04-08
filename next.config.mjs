@@ -12,6 +12,16 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "m.media-amazon.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "robodo.in",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "studentalliance.s3.ap-northeast-1.wasabisys.com",
       },
       {
